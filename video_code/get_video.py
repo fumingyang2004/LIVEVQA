@@ -984,8 +984,6 @@ class YouTubeNewsCrawler:
 
 def main():
     parser = argparse.ArgumentParser(description="Download YouTube news videos for a date range and process subtitles/transcription automatically.")
-    parser.add_argument("--api_key", type=str, default=os.environ.get('YOUTUBE_API_KEY'),
-                        help="YouTube Data API v3 key. Recommended to use environment variable YOUTUBE_API_KEY.")
     parser.add_argument("--output_dir", type=str, default="",
                         help="Root directory for downloading videos and subtitles.")
     parser.add_argument("--start_date", type=str, required=True,
@@ -1004,7 +1002,7 @@ def main():
     main_logger.info("Program started")
 
     api_keys_list = [
-        
+        # Input your YouTube API keys here
     ]
 
     if not api_keys_list or api_keys_list[0] == 'YOUR_API_KEY_HERE':
@@ -1025,7 +1023,8 @@ def main():
 
     crawler = YouTubeNewsCrawler(api_keys=api_keys_list, output_dir=args.output_dir,
                                  whisper_model=args.whisper_model,
-                                 )
+                                 openai_api_key=args.openai_api_key,
+                                 openai_model=args.openai_model)
 
     main_logger.info(f"Starting processing date range: {args.start_date} to {args.end_date}")
     total_downloaded_all_days = 0

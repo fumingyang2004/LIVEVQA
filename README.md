@@ -112,6 +112,9 @@ pip install -r requirements_video.txt
 cd video_code
 bash video_pipeline.sh
 ```
+
+**Tips:** When setting up the environment, make sure to install both ffprobe and ffmpeg, otherwise the pipeline will fail with errors.
+
 This module includes downloading the videos, spliting videos by text, Extracting keyframes, deduplication, selecting the final pictures. Finally, it would process a json named `modified_{timestamp}.json`, and the QA generation is the same as NEWS.
 
 **Note:** We made a small modification to `qa_makers/main.py` — before generating QAs, the module now evaluates whether the associated text is meaningful enough for QA generation. Therefore, to generate QAs from videos, you should use the QA generation code provided in the `video_code` directory. Other components remain unchanged.
