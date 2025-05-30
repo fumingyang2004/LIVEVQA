@@ -1,0 +1,12 @@
+aiofiles
+aiohttp
+beautifulsoup4
+jsonlines
+matplotlib
+openai
+pandas
+Pillow
+Requests
+streamlit
+tqdm
+lxml
