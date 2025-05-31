@@ -2,7 +2,7 @@
 
 ## Environment
 
-This project is built on Python 3.8. You can create a virtual environment and install the required packages using the following commands:
+You can create a virtual environment and install the required packages using the following commands:
 
 ```bash
 conda create -n livevqa python=3.10.16 -y
