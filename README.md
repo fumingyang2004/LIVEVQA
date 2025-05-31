@@ -1,5 +1,15 @@
 # LIVEVQA
 
+## Environment
+
+This project is built on Python 3.8. You can create a virtual environment and install the required packages using the following commands:
+
+```bash
+conda create -n livevqa python=3.10.16 -y
+conda activate livevqa
+pip install -r requirements.txt
+```
+
 ## Benchmark
 
 Please refer to the `liveVQA_benchmarks/README.md` for detailed information.
@@ -18,9 +28,6 @@ After simple settings, you can run the following command to collect news article
 
 ```bash
 cd LIVEVQA
-conda create -n news python=3.10.16 -y
-conda activate news
-pip install -r requirements.txt
 python run.py
 ```
 
@@ -106,9 +113,6 @@ After simple settings, you can run the following command to collect YouTube vide
 
 ```bash
 cd LIVEVQA
-conda create -n video python=3.9.0 -y
-conda activate video
-pip install -r requirements_video.txt
 cd video_code
 bash video_pipeline.sh
 ```
@@ -126,7 +130,6 @@ This part can help you collect arxiv data
 
 ```bash
 cd arxiv
-pip install -r requirements_arxiv.txt
 ```
 
 ### Download papers
