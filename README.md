@@ -5,7 +5,7 @@
 You can create a virtual environment and install the required packages using the following commands:
 
 ```bash
-conda create -n livevqa python=3.10.16 -y
+conda create -n livevqa python=3.9.0 -y
 conda activate livevqa
 pip install -r requirements.txt
 ```
@@ -108,8 +108,35 @@ https://github.com/zcczhang/UVD
 https://github.com/opendatalab/DocLayout-YOLO
 You should also modify the `demo.py` files in both folders based on the implementations in `uvd.py` and `doclayout.py`.
 
-After simple settings, you can run the following command to collect YouTube videos:
+**Pay attention:** Torch version may be conflicting with the cuda version, so we recommend you to check your cuda version:
 
+```bash
+nvcc --version
+nvidia-smi
+```
+
+Then you can install the corresponding torch version. For example, if your cuda version is 12.4, you can install torch with the following command:
+
+```bash
+pip uninstall torch torchvision torchaudio -y
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+```
+
+If your cuda version is 11.8, you can install torch with the following command:
+
+```bash
+pip uninstall torch torchvision torchaudio -y
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
+
+If you just want to use CPU, you can install torch with the following command:
+
+```bash
+pip uninstall torch torchvision torchaudio -y
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+```
+
+After simple settings, you can run the following command to collect YouTube videos:
 
 ```bash
 cd LIVEVQA
