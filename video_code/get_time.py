@@ -8,6 +8,8 @@ import datetime
 
 timestamp = datetime.datetime.now().strftime("%m%d%H%M")
 
+os.makedirs("logs", exist_ok=True)
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,

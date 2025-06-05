@@ -1022,9 +1022,7 @@ def main():
     date_range = [start_dt + timedelta(days=x) for x in range((end_dt - start_dt).days + 1)]
 
     crawler = YouTubeNewsCrawler(api_keys=api_keys_list, output_dir=args.output_dir,
-                                 whisper_model=args.whisper_model,
-                                 openai_api_key=args.openai_api_key,
-                                 openai_model=args.openai_model)
+                                 whisper_model=args.whisper_model)
 
     main_logger.info(f"Starting processing date range: {args.start_date} to {args.end_date}")
     total_downloaded_all_days = 0
