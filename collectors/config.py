@@ -8,8 +8,8 @@ OPENAI_API_KEY = "YOUR OPENAI API KEY"
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 # Data and image storage paths
-DATA_DIR = os.path.join(WORKSPACE, "data")
-IMG_DIR = os.path.join(DATA_DIR, "imgs")
+DATA_DIR = os.path.join(WORKSPACE, "data/raw_data")
+IMG_DIR = os.path.join(WORKSPACE, "data/imgs")
 
 # Define topic categories
 CATEGORIES = {

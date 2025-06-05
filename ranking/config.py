@@ -58,6 +58,24 @@ if args.timestamp:
         print(f"Error: File with timestamp {timestamp} not found at {specified_file}")
         sys.exit(1)
 
+else:
+    # No timestamp specified, try to get the latest file
+    print("No timestamp specified, looking for the latest hot_topics file...")
+    latest_file = get_latest_hot_topics_file()
+    if latest_file:
+        input_file = latest_file
+        timestamp = get_timestamp_from_filename(os.path.basename(latest_file))
+        print(f"Using latest file: {input_file}")
+        print(f"Extracted timestamp: {timestamp}")
+    else:
+        print("Error: No hot_topics_*.json files found in the raw_data directory")
+        print(f"Please check if files exist in: {os.path.join(BASE_DIR, 'data/raw_data')}")
+        sys.exit(1)
+
+# Validate that we have both input_file and timestamp
+if not input_file or not timestamp:
+    print("Error: Could not determine input file or timestamp")
+    sys.exit(1)
 
 # Set output file, maintaining the same timestamp
 output_file = os.path.join(BASE_DIR, f"data/raw_data/modified_topics_{timestamp}.json")
