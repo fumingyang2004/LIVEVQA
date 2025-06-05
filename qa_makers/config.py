@@ -1,7 +1,7 @@
 
 import os
 
-BASE_DIR = "/mnt/nvme1/fmy/LIVEVQA"
+BASE_DIR = "YOUR BASE DIRECTORY HERE"  # Replace with your actual base directory
 DATA_DIR = os.path.join(BASE_DIR, "data/raw_data")
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 
