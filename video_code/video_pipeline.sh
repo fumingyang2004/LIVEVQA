@@ -52,6 +52,7 @@ python image_subtitle_selector.py \
 
 echo "Final Step: Generating JSON"
 python process_video_segments.py \
---segments_dir $SEG_DIR || { echo "Final step failed. Aborting."; exit 1; }
+--segments_dir $SEG_DIR \
+--output_dir $OUTPUT_DIR || { echo "Final step failed. Aborting."; exit 1; }
 
 echo "✅ Processing completed successfully."
