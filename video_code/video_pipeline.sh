@@ -3,6 +3,7 @@
 # Define common variables
 SOURCE_DIR="Input your source directory here"
 SEG_DIR="Input your segment directory here"
+OUTPUT_DIR="Input your output directory here"
 
 # Enable strict error handling
 set -e  # Exit immediately on error
