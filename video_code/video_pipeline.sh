@@ -38,7 +38,7 @@ echo "Step 6: First deduplication"
 python merge.py \
 --root_dir $SEG_DIR || { echo "Step 6 failed. Aborting."; exit 1; }
 
-echo "Step 7: Cropping videos"
+echo "Step 7: Cropping pictures"
 python DocLayout-YOLO/DocLayout.py   \
   --model your_model_path\
   --root-dir $SEG_DIR || { echo "Step 7 failed. Aborting."; exit 1; }
