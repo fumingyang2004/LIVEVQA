@@ -72,7 +72,7 @@ def load_known_video_ids(subdirectories_file='subdirectories.txt'):
                 # Use regex to extract possible video IDs
                 for line in file:
                     # Skip headers and empty lines
-                    if line.startswith("目录扫描结果") or line.startswith("目录") or not line.strip():
+                    if line.startswith("content") or not line.strip():
                         continue
                     
                     # Parse each line and look for video ID patterns (e.g., "1. YT5DIbzF3dE" or "123. -779Zc2xS10")
@@ -197,7 +197,7 @@ class YouTubeNewsCrawler:
              return False
         detections = []
         try:
-            check_text = text[:500]  # 只检查前500个字符以提高性能
+            check_text = text[:500] 
             for _ in range(2):
                 lang = detect(check_text)
                 detections.append(lang)
@@ -214,15 +214,12 @@ class YouTubeNewsCrawler:
         target_date = datetime.strptime(date_str, "%Y-%m-%d")
         published_after = target_date.isoformat() + 'Z'
         published_before = (target_date + timedelta(days=1)).isoformat() + 'Z'
-        results_per_page = 10  # 降低一次获取数量以便实时处理
-
-        # 扩展视频分类列表，包含新闻(25)、娱乐(24)、教育(27)和科学技术(28)
+        results_per_page = 10  
         category_ids = ['25', '24', '27', '28']
         filtered_items = []
 
         self.logger.info(f"Starting video search for {date_str} (target: {max_total_results})...")
 
-        # 对每个分类轮流搜索，避免单一分类搜索太多
         for category_id in category_ids:
             if len(filtered_items) >= max_total_results:
                 self.logger.info(f"Reached target {max_total_results}, stopping search.")
@@ -244,7 +241,7 @@ class YouTubeNewsCrawler:
                         request = self.youtube.search().list(
                             part='snippet',
                             maxResults=results_per_page,
-                            q='news OR education OR science OR technology',  # 扩展搜索关键词
+                            q='news OR education OR science OR technology',
                             type='video',
                             videoCategoryId=category_id,
                             order='relevance',  
@@ -459,11 +456,9 @@ class YouTubeNewsCrawler:
                 "like_count": like_count,
                 "comment_count": comment_count
             }
-            
-            # JSON 文件路径
+
             json_path = os.path.join(video_folder_path, f"{video_id}_metadata.json")
             
-            # 写入 JSON 文件
             with open(json_path, 'w', encoding='utf-8') as f:
                 json.dump(metadata, f, ensure_ascii=False, indent=2)
                 
@@ -668,7 +663,7 @@ class YouTubeNewsCrawler:
             self.logger.error(f"Unknown error during transcoding: {e}")
             return None
 
-    def download_video(self, video_id, title, timeout=300):  # 添加超时参数，默认 5 分钟
+    def download_video(self, video_id, title, timeout=300):  
         """
         Download the YouTube video and subtitles for the given video_id to self.output_dir/video_id/.
         Returns (video_path, vtt_path). If download fails, corresponding path is None.
@@ -697,7 +692,7 @@ class YouTubeNewsCrawler:
             # Check H264 version first (preferred)
             if os.path.exists(expected_h264_path):
                 file_size = os.path.getsize(expected_h264_path)
-                if file_size > 1024*1024:  # 大于1MB的文件视为有效文件
+                if file_size > 1024*1024: 
                     self.logger.info(f"  H264 video file already exists, skipping download: {os.path.basename(expected_h264_path)}")
                     video_path = expected_h264_path
                     video_exists = True
@@ -705,12 +700,11 @@ class YouTubeNewsCrawler:
             # If no H264 version, check original file
             if not video_exists and os.path.exists(expected_mp4_path):
                 file_size = os.path.getsize(expected_mp4_path)
-                if file_size > 1024*1024:  # 大于1MB的文件视为有效文件
+                if file_size > 1024*1024: 
                     self.logger.info(f"  Video file already exists, skipping download: {os.path.basename(expected_mp4_path)}")
                     video_path = expected_mp4_path
                     video_exists = True
                 else:
-                    # 文件存在但可能不完整，尝试删除后重新下载
                     self.logger.warning(f"  Existing video file too small ({file_size} bytes), may be incomplete, will re-download")
                     try:
                         os.remove(expected_mp4_path)
@@ -855,7 +849,6 @@ class YouTubeNewsCrawler:
         Save as much metadata as possible.
         """
         try:
-            # 获取更详细的视频信息，支持API key自动切换
             video_info = {}
             attempt = 0
             retries = 3
