@@ -985,9 +985,6 @@ def main():
                         help="End date for crawling (format: YYYY-MM-DD).")
     parser.add_argument("--max_videos_per_day", type=int, default=1000000,
                         help="Maximum number of videos to download per day.")
-    parser.add_argument("--whisper_model", type=str, default="base",
-                        choices=["tiny", "base", "small", "medium", "large", "large-v2", "large-v3"],
-                        help="Whisper model size to use for transcription (default: 'base').")
 
     args = parser.parse_args()
 
@@ -1014,8 +1011,7 @@ def main():
 
     date_range = [start_dt + timedelta(days=x) for x in range((end_dt - start_dt).days + 1)]
 
-    crawler = YouTubeNewsCrawler(api_keys=api_keys_list, output_dir=args.output_dir,
-                                 whisper_model=args.whisper_model)
+    crawler = YouTubeNewsCrawler(api_keys=api_keys_list, output_dir=args.output_dir)
 
     main_logger.info(f"Starting processing date range: {args.start_date} to {args.end_date}")
     total_downloaded_all_days = 0
