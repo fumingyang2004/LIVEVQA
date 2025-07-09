@@ -20,7 +20,7 @@ import concurrent.futures
 
 def setup_logger(output_dir, name='youtube_crawler'):
     """Set up a logger and create a timestamped log file"""
-    # 获取现有的记录器或创建新的
+
     logger = logging.getLogger(name)
 
     if logger.handlers:
