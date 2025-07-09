@@ -12,7 +12,6 @@ import re
 import isodate
 from langdetect import detect, LangDetectException
 import subprocess
-import whisper  
 import json  
 import openai 
 import logging  
@@ -92,17 +91,16 @@ def load_known_video_ids(subdirectories_file='subdirectories.txt'):
     return known_ids
 
 class YouTubeNewsCrawler:
-    def __init__(self, api_keys, output_dir='downloaded_news', whisper_model='base',
+    def __init__(self, api_keys, output_dir='downloaded_news',
                  openai_api_key=None, openai_model="gpt-4.1"):
-        """Initialize YouTube API client, set output dir and Whisper model. Supports multiple API keys with automatic switching."""
+        """Initialize YouTube API client, set output dir. Supports multiple API keys with automatic switching."""
         self.api_keys = api_keys
         self.api_key_index = 0
         
         self.logger = setup_logger(output_dir, f'youtube_crawler_{id(self)}')
-        self.logger.info(f"Initialized YouTubeNewsCrawler: output_dir={output_dir}, Whisper model={whisper_model}")
+        self.logger.info(f"Initialized YouTubeNewsCrawler: output_dir={output_dir}")
         self._init_youtube_client()
         self.output_dir = output_dir
-        self.whisper_model = whisper_model
         os.makedirs(self.output_dir, exist_ok=True)
         self.processed_ids_in_run = set()
 
@@ -542,7 +540,7 @@ class YouTubeNewsCrawler:
             self.logger.info(f"\n[{video_counter + skipped_count + known_id_count + 1}/{len(candidate_videos)}] Processing: {title} (ID: {video_id})")
 
             video_folder_path = os.path.join(self.output_dir, video_id)
-            output_txt_path = os.path.join(video_folder_path, f"{video_id}.txt")  # Whisper 输出
+            output_txt_path = os.path.join(video_folder_path, f"{video_id}.txt") 
             output_paragraphs_txt_path = os.path.join(video_folder_path, f"{video_id}.paragraphs.txt")  # VTT 转换输出
 
             if os.path.exists(output_txt_path) or os.path.exists(output_paragraphs_txt_path):
@@ -992,6 +990,7 @@ def main():
     main_logger.info("Program started")
 
     api_keys_list = [
+        "AIzaSyAI2SxLrYfCnn7HTFDM7ZwE-CU2bP1Nv0I"
         # Input your YouTube API keys here
     ]
 
