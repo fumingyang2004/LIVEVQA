@@ -990,7 +990,6 @@ def main():
     main_logger.info("Program started")
 
     api_keys_list = [
-        "AIzaSyAI2SxLrYfCnn7HTFDM7ZwE-CU2bP1Nv0I"
         # Input your YouTube API keys here
     ]
 
