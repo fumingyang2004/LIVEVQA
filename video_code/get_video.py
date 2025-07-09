@@ -13,7 +13,6 @@ import isodate
 from langdetect import detect, LangDetectException
 import subprocess
 import json  
-import openai 
 import logging  
 import concurrent.futures  
 
@@ -91,8 +90,7 @@ def load_known_video_ids(subdirectories_file='subdirectories.txt'):
     return known_ids
 
 class YouTubeNewsCrawler:
-    def __init__(self, api_keys, output_dir='downloaded_news',
-                 openai_api_key=None, openai_model="gpt-4.1"):
+    def __init__(self, api_keys, output_dir='downloaded_news'):
         """Initialize YouTube API client, set output dir. Supports multiple API keys with automatic switching."""
         self.api_keys = api_keys
         self.api_key_index = 0
@@ -103,9 +101,6 @@ class YouTubeNewsCrawler:
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
         self.processed_ids_in_run = set()
-
-        self.openai_api_key = openai_api_key
-        self.openai_model = openai_model
 
         self.known_video_ids = load_known_video_ids()
         self.logger.info(f"Loaded {len(self.known_video_ids)} known video IDs. These will be skipped.")
