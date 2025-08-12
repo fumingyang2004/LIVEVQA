@@ -89,6 +89,44 @@ python main.py
 
 Every time you run the command, it will read the latest `l1_filtered_topics_{timestamp}.json` and generate Level 2 QAs. The output file will be saved in `l23_topics_{timestamp}.json`.
 
+### Level 2 QAs Filter
+
+This module can filter and validate Level 2 QAs using GPT-4.1 API to ensure answer quality and accuracy.
+
+#### How to start?
+
+You should set your project root directory and OpenRouter API key in `qa_L2_Filter/L2_Filter.py`. After that, you can run the following command to filter Level 2 QAs:
+
+```bash
+cd qa_L2_Filter
+python L2_Filter.py
+```
+
+Every time you run the command, it will:
+1. Find the latest `l23_topics_{timestamp}.json` file
+2. Skip entries that are already discarded
+3. Validate each Level 2 question by calling GPT-4.1 API with the question, options, text context, and image
+4. Compare API answers with ground truth
+5. Remove questions that fail validation
+6. Discard entire entries if all Level 2 questions are removed
+7. Save the filtered results in `l23_filtered_topics_{timestamp}.json` (using the same timestamp as input)
+
+#### Configuration
+
+Before running the script, make sure to:
+- Set `PROJECT_ROOT` to your LIVEVQA project directory
+- Replace `OPENROUTER_API_KEY` with your actual OpenRouter API key
+- Ensure all image files referenced in the JSON exist and are accessible
+
+#### Features
+
+- **Automatic file detection**: Finds the latest l23_topics file automatically
+- **Quality validation**: Uses GPT-4.1 to verify answer correctness
+- **Consistent naming**: Output file uses the same timestamp as input
+- **Progress tracking**: Detailed logging of validation results
+- **Error handling**: Graceful handling of missing images and API errors
+- **Rate limiting**: Built-in delays to respect API limits
+
 ### Automatic Pipeline
 
 If you want to run the whole pipeline automatically, you can set your base path in `start.py` and run the following command:
@@ -103,6 +141,7 @@ This will automatically:
 3. Generate Level 1 QAs
 4. Filter Level 1 QAs
 5. Generate Level 2 QAs
+6. Filter Level 2 QAs *(Note: L2 filtering needs to be run separately due to API requirements)*
 
 The final output will be saved in `l23_topics_{timestamp}.json`.
 
