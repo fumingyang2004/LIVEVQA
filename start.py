@@ -13,7 +13,8 @@ scripts = [
     os.path.join(BASE_DIR, "ranking", "Model_ranking.py"),
     os.path.join(BASE_DIR, "qa_makers", "main.py"),
     os.path.join(BASE_DIR, "qa_Filter", "main.py"),
-    os.path.join(BASE_DIR, "qa_makers_mh", "main.py")
+    os.path.join(BASE_DIR, "qa_makers_mh", "main.py"),
+    os.path.join(BASE_DIR, "qa_L2_Filter", "L2_Filter.py")
 ]
 
 def run_scripts(scripts_list):
