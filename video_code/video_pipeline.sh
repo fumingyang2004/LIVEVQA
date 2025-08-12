@@ -3,6 +3,7 @@
 # Define common variables
 SOURCE_DIR="Input your source directory here"
 SEG_DIR="Input your segment directory here"
+OUTPUT_DIR="Input your output directory here"
 
 # Enable strict error handling
 set -e  # Exit immediately on error
@@ -37,7 +38,7 @@ echo "Step 6: First deduplication"
 python merge.py \
 --root_dir $SEG_DIR || { echo "Step 6 failed. Aborting."; exit 1; }
 
-echo "Step 7: Cropping videos"
+echo "Step 7: Cropping pictures"
 python DocLayout-YOLO/DocLayout.py   \
   --model your_model_path\
   --root-dir $SEG_DIR || { echo "Step 7 failed. Aborting."; exit 1; }
@@ -52,6 +53,7 @@ python image_subtitle_selector.py \
 
 echo "Final Step: Generating JSON"
 python process_video_segments.py \
---segments_dir $SEG_DIR || { echo "Final step failed. Aborting."; exit 1; }
+--segments_dir $SEG_DIR \
+--output_dir $OUTPUT_DIR || { echo "Final step failed. Aborting."; exit 1; }
 
 echo "✅ Processing completed successfully."

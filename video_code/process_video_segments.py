@@ -144,13 +144,15 @@ def main():
     parser = argparse.ArgumentParser(description="Process video segments and generate JSON data")
     parser.add_argument('--segments_dir', type=str, default="",
                         help="Path to video segments directory")
+    parser.add_argument('--output_dir', type=str, default="",
+                        help="Path to output directory for JSON files")
     
     # Parse command line arguments
     args = parser.parse_args()
     segments_dir = args.segments_dir
     
     # Set output path
-    output_dir = ""
+    output_dir = args.output_dir
     output_file = os.path.join(output_dir, f"modified_topics_{timestamp}.json")
     
     # Ensure output directory exists
