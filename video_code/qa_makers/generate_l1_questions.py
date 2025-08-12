@@ -10,90 +10,94 @@ import glob
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
+from config import BASE_DIR, DATA_DIR, CONFIG
 
+# Add project root path to system path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from qa_makers.question_processor import setup_client, get_thread_client, call_gpt_with_retry
-
+# Import project configuration
+from ranking.client import setup_client, get_thread_client, call_gpt_with_retry
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(name)s - %(threadName)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join("logs", "l1_question_generator.log")),
+        logging.FileHandler(os.path.join(BASE_DIR+"/logs", "l1_question_generator.log")),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
-BASE_DIR = ""
-DATA_DIR = os.path.join(BASE_DIR, "data/raw_data")
-
+# Locks
 output_lock = threading.Lock()
 save_lock = threading.Lock()
 last_save_time = time.time()
 
+# Get the latest modified_topics file
 def get_latest_modified_topics_file():
+    """Get the latest modified_topics file."""
     files = glob.glob(os.path.join(DATA_DIR, "modified_topics_*.json"))
     if not files:
-        return None  
+        return None 
     latest_file = max(files, key=os.path.getmtime)
     return latest_file
 
+# Extract timestamp from filename
 def get_timestamp_from_filename(filename):
+    """Extract timestamp from filename."""
     match = re.search(r'modified_topics_(\d+)\.json', filename)
     if match:
         return match.group(1)
     return None
 
-
+# Determine input and output files
 def determine_io_files(args):
-    
+    """Determine input and output file paths."""
     input_file = None
     timestamp = None
     
     if args.timestamp:
-       
+        # Use timestamp from CLI if provided
         timestamp = args.timestamp
         specified_file = os.path.join(DATA_DIR, f"modified_topics_{timestamp}.json")
         if os.path.exists(specified_file):
             input_file = specified_file
         else:
-            logger.error(f"Not found: {specified_file}")
+            logger.error(f"Error: file with timestamp {timestamp} not found: {specified_file}")
             sys.exit(1)
     elif args.input:
+        # Use input file from CLI if provided
         input_file = args.input
+        # Try to extract timestamp from input filename
         timestamp = get_timestamp_from_filename(input_file)
     else:
+        # Use the latest modified_topics file
         input_file = get_latest_modified_topics_file()
         if input_file:
             timestamp = get_timestamp_from_filename(input_file)
         else:
-            logger.error("Error: Not found modified_topics files")
+            logger.error("Error: no modified_topics files found")
             sys.exit(1)
     
+    # Set output file, keep the same timestamp
     if args.output:
+        # If output is specified by CLI, use it
         output_file = args.output
     elif timestamp:
+        # Use the same timestamp
         output_file = os.path.join(DATA_DIR, f"l1_topics_{timestamp}.json")
     else:
+        # Use default output filename
         output_file = os.path.join(DATA_DIR, "l1_topics.json")
     
     return input_file, output_file, timestamp
 
-CONFIG = {
-    "api_key": "",
-    "model": "gpt-4.1",
-    "max_workers": 8, 
-    "temperature": 0.7,  
-    "max_tokens": 2000
-}
-
 def encode_image_to_base64(image_path):
+    """Encode an image file to a base64 string."""
     try:
         if not os.path.exists(image_path):
-            logger.warning(f"Not found: {image_path}")
+            logger.warning(f"Image file does not exist: {image_path}")
             return None
-            
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')
     except Exception as e:
@@ -147,7 +151,7 @@ Reply only with "meaningful" or "meaningless"."""
             else:
                 meaningful.append(topic)
         except Exception as e:
-            logger.warning(f"Error in LLM filtering: {title[:30]} - {str(e)}")
+            logger.warning(f"LLM filtering failed, keeping by default: {title[:30]} - {str(e)}")
             meaningful.append(topic)
     return meaningful, filtered
 """
@@ -158,6 +162,7 @@ focusing on questions that require social knowledge to answer.
 """
 
 def create_prompt_for_topic(topic, img_index, used_question_types=None, used_questions=None):
+    """Create prompts for a given topic and image index."""
     
     system_prompt = """You are an AI assistant specialized in generating high-quality Level 1 multi-hop questions.
 
@@ -226,29 +231,35 @@ Answers directly readable in the image (including names, acronyms, etc.).
 Answers requiring guessing, inference beyond the text, or external knowledge. 
 """
 
+    # Extract topic info
     title = topic.get('topic', 'No title')
     text = topic.get('text', 'No text')
     img_paths = topic.get('img_paths', [])
     img_urls = topic.get('img_urls', [])
     captions = topic.get('captions', [])
     
+    # Validate image index
     if img_index >= len(img_paths) or not img_paths[img_index]:
         return None
     
+    # Get current image metadata
     img_path = img_paths[img_index]
     img_url = img_urls[img_index] if img_index < len(img_urls) else ""
     caption = captions[img_index] if img_index < len(captions) else "No caption"
     
+    # Build info about used question types
     used_types_info = ""
     if used_question_types:
         used_types_str = ", ".join([f"'{qt}'" for qt in used_question_types])
         used_types_info = f"\nALREADY USED QUESTION TYPES: {used_types_str}"
     
+    # Previously used questions list
     used_questions_info = ""
     if used_questions and len(used_questions) > 0:
         used_questions_str = "\n- " + "\n- ".join([f'"{q}"' for q in used_questions])
         used_questions_info = f"\nQUESTIONS ALREADY GENERATED FOR OTHER IMAGES IN THIS TOPIC: {used_questions_str}"
     
+    # Build user prompt (English)
     user_prompt = f"""Please generate a Level 1 multi-hop question based on the following news article and image. This question should test social knowledge rather than just visual perception.
 
 ARTICLE TITLE: {title}
@@ -320,15 +331,18 @@ IMPORTANT FORMAT INSTRUCTIONS:
     return {"system": system_prompt, "user": user_prompt, "img_path": img_path}
 
 def generate_question_for_image(client, prompt_data):
+    """Generate a question for a single image."""
     system_prompt = prompt_data["system"]
     user_prompt = prompt_data["user"]
     img_path = prompt_data["img_path"]
     
+    # Build messages
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt}
     ]
     
+    # Attach image (base64)
     base64_image = encode_image_to_base64(img_path)
     if base64_image:
         messages.append({
@@ -342,7 +356,7 @@ def generate_question_for_image(client, prompt_data):
             ]
         })
     
-
+    # Call the API
     try:
         response = call_gpt_with_retry(
             client, 
@@ -357,7 +371,7 @@ def generate_question_for_image(client, prompt_data):
             
         content = response.choices[0].message.content
         
-        # Extract JSON part
+        # Extract the JSON part of the response
         import re
         json_match = re.search(r'```json\n([\s\S]*?)\n```|(\{[\s\S]*\})', content)
         
@@ -366,153 +380,132 @@ def generate_question_for_image(client, prompt_data):
             try:
                 result = json.loads(json_str)
                 
-                # Check for error
+                # 检查是否有错误
                 if "error" in result:
-                    logger.warning(f"Cannot generate questions: {result['error']}")
+                    logger.warning(f"Unable to generate question: {result['error']}")
                     return None
                     
                 return result
             except json.JSONDecodeError:
-                logger.error(f"JSON parsing error: {content[:200]}")
+                logger.error(f"JSON parse error: {content[:200]}")
         else:
             logger.error(f"Unable to extract JSON from response: {content[:200]}")
             
         return None
     except Exception as e:
-        logger.error(f"Error in generating: {str(e)}")
+        logger.error(f"Error while generating question: {str(e)}")
         return None
 
 def process_topic(topic, output_data):
-    """Process all images for a single topic"""
-    # Check for placeholder topic
+    """Process all images for a single topic."""
+    # Check whether this is a placeholder topic
     if topic.get('id') is not None and topic.get('topic') is None:
-        logger.info(f"Skipping placeholder topic ID: {topic.get('id')}")
-        # Add to output for consistency but do not generate questions
+        logger.info(f"Skip placeholder topic ID: {topic.get('id')}")
+        # Add to output to keep structure but generate no questions
         topic_copy = {k: topic.get(k) for k in topic.keys()}
         topic_copy["level1_qas"] = []
-        
         with output_lock:
             output_data.append(topic_copy)
         return True
-    
-    # Skip if topic is meaningless
+    # Skip topics explicitly marked as not meaningful
     if topic.get('is_meaningful') is False:
-        logger.info(f"Skipping meaningless topic ID: {topic.get('id', 'No ID')}, Topic: {topic.get('topic', '')[:30]}")
-        # Add to output for consistency but do not generate questions
+        logger.info(f"Skip meaningless topic ID: {topic.get('id', 'NO_ID')}, topic: {topic.get('topic', '')[:30]}")
+        # Add to output to keep structure but generate no questions
         topic_copy = {k: topic.get(k) for k in topic.keys()}
         topic_copy["level1_qas"] = []
-        
         with output_lock:
             output_data.append(topic_copy)
         return True
-    
-    # Create topic copy
+    # Copy topic object
     topic_copy = {k: topic.get(k) for k in topic.keys()}
     topic_copy["level1_qas"] = []
-
     # Get client
     client = get_thread_client()
-
     # Get image paths
     img_paths = topic.get('img_paths', [])
-
     if not img_paths:
         logger.info(f"Topic has no images: {topic.get('topic', '')[:50]}")
         with output_lock:
             output_data.append(topic_copy)
         return True
-
-    # Track used question types and content to avoid duplicates
+    # Track used question types and questions to avoid duplicates
     used_question_types = set()
     used_questions = []
-
-    # Process each image
+    # Iterate over images
     for img_index, img_path in enumerate(img_paths):
         if not img_path:
             continue
-
-        # Skip QA generation for questions deemed not meaningful
-        if not topic.get("is_meaningful", True):
-            continue  # Skip questions deemed not meaningful
-
         logger.info(f"Processing topic '{topic.get('topic', '')[:30]}' image {img_index+1}/{len(img_paths)}")
-
-        # Create prompt, pass used types and questions
+        # Create prompt with used question types and questions
         prompt_data = create_prompt_for_topic(topic, img_index, used_question_types, used_questions)
         if not prompt_data:
             continue
-
         # Generate question
         question_data = generate_question_for_image(client, prompt_data)
-
         if question_data:
-            # Detect duplicate questions
+            # Check for duplicate questions
             is_duplicate = False
             new_question = question_data.get('question', '').lower()
             new_type = question_data.get('question_type', '').lower()
-
-            # Simple similarity check: if question key part is similar, treat as duplicate
+            # Simple similarity check
             for existing_question in used_questions:
                 existing_processed = existing_question.lower().replace("based on the provided image, ", "")
                 new_processed = new_question.lower().replace("based on the provided image, ", "")
-
-                # Extract main part of the question (usually after wh-word)
+                # Extract the core part of the question (after WH-words)
                 import re
                 existing_focus = re.sub(r'^(what|who|where|when|which|how|why)\s+', '', existing_processed)
                 new_focus = re.sub(r'^(what|who|where|when|which|how|why)\s+', '', new_processed)
-
                 if (new_focus in existing_focus or existing_focus in new_focus) and len(new_focus) > 10:
                     is_duplicate = True
-                    logger.warning(f"Detected duplicate question: '{new_question}' and '{existing_question}'")
+                    logger.warning(f"Duplicate question detected: '{new_question}' vs '{existing_question}'")
                     break
-
             # If not duplicate, add to results
             if not is_duplicate:
+                # Update used question types and list
                 used_question_types.add(new_type)
                 used_questions.append(new_question)
-
+                # Append to question list
                 topic_copy["level1_qas"].append(question_data)
-                logger.info(f"Successfully generated question for topic '{topic.get('topic', '')[:30]}': {question_data.get('question', '')[:50]}")
+                logger.info(f"Generated question for topic '{topic.get('topic', '')[:30]}': {question_data.get('question', '')[:50]}")
             else:
-                logger.info(f"Skipped duplicate question: {new_question[:50]}")
-
+                logger.info(f"Skip duplicate question: {new_question[:50]}")
     # Add to output
     with output_lock:
         output_data.append(topic_copy)
-
     return True
 
 def process_topic_thread(topic, output_data):
-    """Thread function: process single topic"""
+    """Thread entry: process a single topic."""
     try:
         success = process_topic(topic, output_data)
-        
         # Save results after each topic
         save_results(output_data)
-            
         return success
     except Exception as e:
         logger.error(f"Error in topic processing thread: {str(e)}")
         return False
 
 def save_results(output_data):
-    """Thread-safe save results to output file"""
+    """Thread-safe save of results to the output file."""
     global last_save_time
-    
+    # Use a lock to avoid concurrent writes
     with save_lock:
+        # Throttle save frequency to reduce I/O
         current_time = time.time()
-        if current_time - last_save_time >= 1:  # Save at least once per second
+        if current_time - last_save_time >= 1:  # At least 1 second between saves
             try:
+                # Create output directory if it does not exist
                 os.makedirs(os.path.dirname(CONFIG["output_file"]), exist_ok=True)
+                # Write to file
                 with open(CONFIG["output_file"], 'w', encoding='utf-8') as f:
                     json.dump(output_data, f, ensure_ascii=False, indent=2)
-                logger.info(f"Saving results to {CONFIG['output_file']}")
+                logger.info(f"Saved incremental results to {CONFIG['output_file']}")
                 last_save_time = current_time
             except Exception as e:
                 logger.error(f"Error saving results: {str(e)}")
 
 def load_topics(file_path):
-    """Safely load JSON file"""
+    """Safely load a JSON file."""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             return json.load(f)
@@ -521,34 +514,34 @@ def load_topics(file_path):
         return []
 
 def main():
-    """Main function"""
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Generate Level 1 Multi-hop Questions')
-    parser.add_argument('--workers', type=int, default=CONFIG["max_workers"], 
-                        help='Number of parallel processing threads')
-    parser.add_argument('--input', type=str, 
-                        help='Input file path (overrides automatic latest file)')
+    """Main entry."""
+    # Parse CLI arguments
+    parser = argparse.ArgumentParser(description='Generate Level-1 multi-hop questions')
+    parser.add_argument('--workers', type=int, default=CONFIG["max_workers"],
+                        help='Number of worker threads')
+    parser.add_argument('--input', type=str,
+                        help='Input file path (override auto-selected latest file)')
     parser.add_argument('--output', type=str,
-                        help='Output file path (overrides auto-generated path)')
+                        help='Output file path (override auto-generated path)')
     parser.add_argument('--continue', dest='continue_processing', action='store_true',
-                        help='Continue processing from existing output file')
-    parser.add_argument('--timestamp', '-t', type=str, 
-                        help='Specify the timestamp of the modified_topics file to process, e.g., 04181718')
+                        help='Continue processing an existing output file')
+    parser.add_argument('--timestamp', '-t', type=str,
+                        help='Specify the timestamp of modified_topics file to process, e.g., 04181718')
     args = parser.parse_args()
-    
+
     # Determine input/output files
     input_file, output_file, timestamp = determine_io_files(args)
-    
+
     # Update config
     CONFIG["max_workers"] = args.workers
     CONFIG["input_file"] = input_file
     CONFIG["output_file"] = output_file
-    
+
     logger.info(f"Input file: {input_file}")
     logger.info(f"Output file: {output_file}")
     if timestamp:
         logger.info(f"Timestamp: {timestamp}")
-    
+
     # Load input topics
     input_topics = load_topics(CONFIG["input_file"])
     if not input_topics:
@@ -556,58 +549,59 @@ def main():
         return
     logger.info(f"Loaded {len(input_topics)} topics from {CONFIG['input_file']}")
 
-    # Filter meaningless topics, output two files (using LLM filtering)
+    # Filter meaningless topics using LLM and output two files
     filtered_output_path = input_file.replace("modified_topics", "filteredout_topics")
     meaningful_output_path = input_file.replace("modified_topics", "meaningful_topics")
     client = setup_client()
     input_topics, filtered_topics = llm_filter_topics_with_prompt(input_topics, client)
-    logger.info(f"Retained {len(input_topics)} items, filtered out {len(filtered_topics)} items")
+    logger.info(f"After filtering: kept {len(input_topics)}, filtered out {len(filtered_topics)}")
     with open(filtered_output_path, 'w', encoding='utf-8') as f:
         json.dump(filtered_topics, f, ensure_ascii=False, indent=2)
     with open(meaningful_output_path, 'w', encoding='utf-8') as f:
         json.dump(input_topics, f, ensure_ascii=False, indent=2)
-    
-    # Initialize output data and processed ID set
+
+    # Initialize output buffer and processed ID set
     output_data = []
     processed_ids = set()
-    
-    # Check if output file exists and load processed IDs
+
+    # If output exists, load processed IDs
     if os.path.exists(CONFIG["output_file"]):
         existing_output = load_topics(CONFIG["output_file"])
         if existing_output:
-            # If --continue is used, use existing output as base
             if args.continue_processing:
                 output_data = existing_output
                 logger.info(f"Loaded {len(output_data)} processed topics from {CONFIG['output_file']}")
-            
-            # Extract processed IDs for deduplication
+            # Extract processed IDs for deduplication regardless of --continue
             processed_ids = {topic.get('id') for topic in existing_output if topic.get('id') is not None}
-            logger.info(f"Found {len(processed_ids)} processed IDs, will skip these")
-    
+            logger.info(f"Found {len(processed_ids)} processed IDs, they will be skipped")
+
     # Filter out already processed topics
     topics_to_process = []
     for topic in input_topics:
         topic_id = topic.get('id')
         if topic_id is None:
+            # Topics without ID are also processed
             topics_to_process.append(topic)
         elif topic_id not in processed_ids:
             topics_to_process.append(topic)
         else:
-            logger.info(f"Skipping already processed topic ID: {topic_id}")
-    
-    logger.info(f"After filtering, {len(topics_to_process)} new topics to process with {CONFIG['max_workers']} threads")
-    
+            logger.info(f"Skip processed topic ID: {topic_id}")
+
+    logger.info(f"{len(topics_to_process)} new topics to process with {CONFIG['max_workers']} threads")
+
+    # Return early if there are no new topics
     if not topics_to_process:
         logger.info("No new topics to process, exiting")
         return
-    
-    # Use thread pool to process topics in parallel
+
+    # Use a thread pool to process topics concurrently
     with ThreadPoolExecutor(max_workers=CONFIG["max_workers"]) as executor:
+        # Submit all tasks
         future_to_topic = {
-            executor.submit(process_topic_thread, topic, output_data): topic 
+            executor.submit(process_topic_thread, topic, output_data): topic
             for topic in topics_to_process
         }
-        
+        # Handle completed tasks
         with tqdm(total=len(topics_to_process), desc="Processing topics") as pbar:
             for future in as_completed(future_to_topic):
                 topic = future_to_topic[future]
@@ -616,13 +610,13 @@ def main():
                     pbar.update(1)
                 except Exception as e:
                     logger.error(f"Worker thread failed: {str(e)}")
-    
+
     # Final save
     try:
         os.makedirs(os.path.dirname(CONFIG["output_file"]), exist_ok=True)
         with open(CONFIG["output_file"], 'w', encoding='utf-8') as f:
             json.dump(output_data, f, ensure_ascii=False, indent=2)
-        logger.info(f"All processing complete, saved to {CONFIG['output_file']}")
+        logger.info(f"All processing completed and saved to {CONFIG['output_file']}")
     except Exception as e:
         logger.error(f"Error saving final results: {str(e)}")
 
