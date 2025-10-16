@@ -1,5 +1,0 @@
-请你在C:\Users\名扬\Desktop\LIVEVQA\liveVQA_benchmarks里写一个py脚本，这个脚本读取C:\Users\名扬\Desktop\LIVEVQA\liveVQA_benchmarks\News\benchmark.json和C:\Users\名扬\Desktop\LIVEVQA\liveVQA_benchmarks\Video\benchmark.json这两个json文件，文件的组织结构和刚刚我给你的是完全一致的。你需要删除这样的条目：如果发现"level2_qa"里面的"question_type"为"reason"就直接把整个条目（即包括level1问题和level2问题的全部条目的整个）都删除。你操作后的那些新json文件需要保存为C:\Users\名扬\Desktop\LIVEVQA\liveVQA_benchmarks\News\benchmark_filtered.json和C:\Users\名扬\Desktop\LIVEVQA\liveVQA_benchmarks\Video\benchmark_filtered.json。请你帮我写这个脚本。
-
-任务完成的非常好！请你再在C:\Users\名扬\Desktop\LIVEVQA\liveVQA_benchmarks里写一个py脚本，这个脚本是基于streamlit的数据标注界面。你需要展示刚刚过滤后的json文件（C:\Users\名扬\Desktop\LIVEVQA\liveVQA_benchmarks\News\benchmark_filtered.json，注意只需要展示新闻类型的而不是视频类型的）里的内容。你只需要展示level1和level2问题以及答案选项，图片不需要展示。每一个条目你需要给我一个删除选项按钮，我按下这个按钮后，这个条目就会从json里面删除。注意删除后需要立刻（很重要！）保存到C:\Users\名扬\Desktop\LIVEVQA\liveVQA_benchmarks\News\benchmark_filtered.json里。请你帮我写这个脚本。
-
-我需要你把图片也带上。图片在C:\Users\名扬\Desktop\LIVEVQA\liveVQA_benchmarks\News\News_imgs\目录下，图片的文件名就是json文件里"img_path"字段的值。请你帮我修改这个脚本。
